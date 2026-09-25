@@ -1,85 +1,34 @@
 # QuickBlog
 
-Paste a blog post, get a short summary, and find it again in your history.
+Paste an article, get a concise summary, and find it later in your account history.
 
-> **Status:** The app currently has a React frontend and an Express API. A Rust API is planned. The Rust architecture below is the intended design, not an implemented service.
+The frontend is React and Vite in `client/`. The API is Rust with Axum, Tokio, SQLx, PostgreSQL, and Reqwest. The API calls OpenAI's `gpt-4o-mini` model.
 
-## What QuickBlog will do
+## Run locally
 
-- Summarize pasted article text with the OpenAI API.
-- Save summaries to PostgreSQL for each signed-in user.
-- Browse previous summaries in the history page.
-
-The current UI accepts pasted text. The Express prompt formats that text today; a real summarization prompt is part of the Rust migration. Fetching articles from URLs is a possible later addition.
-
-## Planned Rust architecture
-
-```text
-React + Vite frontend
-        |
-        | JSON API
-        v
-Rust API: Axum + Tokio
-   |              |
-   v              v
-PostgreSQL      OpenAI API
-   SQLx           Reqwest
-```
-
-The React app will stay in `client/`. The Rust API will replace the Express code in `server/` while keeping these routes and JSON responses:
-
-| Method | Route | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/auth/signup` | Create an account and return a token |
-| `POST` | `/api/auth/login` | Sign in and return a token |
-| `POST` | `/api/summarize` | Summarize article text and save the result |
-| `GET` | `/api/summarize` | List the signed-in user's summaries |
-
-The planned API will use Serde for JSON. It will verify existing bcrypt password hashes so current accounts can move to Rust.
-
-## Repository layout
-
-```text
-client/   React and Vite frontend
-server/   Current Express API, to be replaced by Rust
-db/       Current SQL schema
-```
-
-## Development with the current API
-
-You need Node.js and PostgreSQL. Clone the repository and install the dependencies:
-
-```bash
-git clone https://github.com/x-mori/QuickBlog.git
-cd QuickBlog
-```
-
-Then install the current app dependencies:
+You need Rust and Cargo, Node.js, PostgreSQL, and an OpenAI API key. Create a PostgreSQL database, then copy `.env.example` to `.env` in the repository root and set `DATABASE_URL`, `JWT_SECRET`, and `OPENAI_API_KEY`. Use a random `JWT_SECRET` of at least 32 characters.
 
 ```bash
 npm install
 npm install --prefix client
-npm install --prefix server
+npm run dev
 ```
 
-Create `server/.env` for the current Express API:
+`npm run dev` starts `cargo run` and Vite. The API listens on `127.0.0.1:3000` and Vite proxies `/api` to it. You can also run them separately with `cargo run` and `npm run client`. On the first API start, SQLx applies the files in `migrations/`.
 
-```dotenv
-DATABASE_URL=postgres://user:password@localhost:5432/quickblog
-JWT_SECRET=replace-with-a-long-random-secret
-OPENAI_API_KEY=your-api-key
-PORT=3000
-```
+For a separately hosted frontend, set `VITE_API_URL` to the API origin when building the client. Set `CORS_ORIGIN` on the API to the frontend origin. See `client/.env.example`. Build the frontend with `npm run build --prefix client`.
 
-Run `npm run dev`. Express listens on port 3000 by default; Vite serves the frontend on its own development port.
+## API
 
-The checked-in `db/schema.sql` is incomplete for a fresh database: the current API also needs a `users` table and a `summaries.user_id` column. Database migrations are part of the Rust work below.
+| Method | Route | Result |
+| --- | --- | --- |
+| `POST` | `/api/auth/signup` | Create an account and return `{ "token" }` |
+| `POST` | `/api/auth/login` | Sign in and return `{ "token", "userId" }` |
+| `POST` | `/api/summarize` | Summarize `{ "article" }`, save it, and return `{ "summary" }` |
+| `GET` | `/api/summarize` | Return the signed-in user's `{ "id", "summary", "created_at" }` rows |
 
-## Rust migration
+The summary routes require `Authorization: Bearer <token>`. New tokens expire after seven days. Paste 1 to 20,000 characters per article. API errors have an `error` field and a matching HTTP status.
 
-1. Add PostgreSQL migrations for accounts, summary ownership, and timestamps.
-2. Implement the existing auth, summary, and history routes in Rust.
-3. Change the model prompt to request an actual summary. Validate article size and report OpenAI or database failures clearly.
-4. Make the frontend API URL configurable, verify the complete user flow, then retire the Express API.
+## Existing databases
 
-Rust build and run instructions will be added when the Rust service exists.
+The first migration creates the missing `users` table and summary ownership column when needed. It keeps existing account IDs and bcrypt password hashes. Old summary rows without an owner remain in the database but cannot appear in any user's history. Existing tokens from the Express API have no expiration claim, so users must sign in again after switching to Rust. Back up a production database before applying the migration.

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import { apiUrl, readApiResponse } from "./api";
 
 export default function Signup() {
   const { login } = useAuth();
@@ -12,22 +13,19 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
-    const res = await fetch("http://localhost:3000/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-    console.log(data);
-    if (data.token) {
-      login(data.token); // log in right after sign up
+    try {
+      const res = await fetch(apiUrl("/api/auth/signup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await readApiResponse(res);
+      login(data.token);
       navigate("/");
-    } else {
-      setError(data.error || "Signup failed");
+    } catch (error) {
+      setError(error.message || "Signup failed");
     }
   };
-
   return (
     <main className="container flex h-screen items-center justify-center flex-col gap-12">
       <h2 className="text-6xl font-bold text-center">Sign up an account</h2>

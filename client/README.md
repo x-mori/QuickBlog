@@ -1,12 +1,5 @@
-# React + Vite
+# QuickBlog client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Run `npm install --prefix client`, then `npm run client` from the repository root. Vite proxies `/api` to the Rust API on `127.0.0.1:3000` during development.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+When hosting the frontend separately, set `VITE_API_URL` to the Rust API origin before running `npm run build --prefix client`. The API must allow that frontend origin through `CORS_ORIGIN`.

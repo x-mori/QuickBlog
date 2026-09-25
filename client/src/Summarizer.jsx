@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Bookmark, Copy } from "lucide-react";
+import { Copy } from "lucide-react";
+import { apiUrl, readApiResponse } from "./api";
 
 function Summarizer() {
   const [article, setArticle] = useState("");
   const [summary, setSummary] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSummary("");
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetch("http://localhost:3000/api/summarize", {
+      const res = await fetch(apiUrl("/api/summarize"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -18,14 +22,14 @@ function Summarizer() {
         },
         body: JSON.stringify({ article }),
       });
-      const data = await res.json();
+      const data = await readApiResponse(res);
       setSummary(data.summary);
-      setLoading(false);
     } catch (error) {
-      console.error(error);
+      setError(error.message || "Summarization failed");
+    } finally {
+      setLoading(false);
     }
   };
-
   return (
     <main className="container flex flex-col items-center gap-20 w-full">
       <h2 className="text-6xl font-bold text-center">QuickBlog</h2>
@@ -52,6 +56,7 @@ function Summarizer() {
               <p>{loading ? "Summarizing..." : "Summarize"}</p>
             </button>
           </form>
+          {error && <p role="alert" className="text-red-400">{error}</p>}
         </div>
         <div className="flex flex-col gap-5 items-center">
           <h2 className="text-4xl font-bold">Summary</h2>

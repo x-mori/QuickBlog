@@ -1,4 +1,4 @@
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
 import Header from "./Header";
 
 const Layout = ({ children }) => {

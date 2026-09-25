@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import { apiUrl, readApiResponse } from "./api";
 
-function LoginForm({ onLogin }) {
+function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -12,25 +13,19 @@ function LoginForm({ onLogin }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:3000/api/auth/login", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-    if (data.token) {
+    try {
+      const res = await fetch(apiUrl("/api/auth/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await readApiResponse(res);
       login(data.token);
       navigate("/");
-    } else {
-      setError(data.error || "An error occurred during login.");
+    } catch (error) {
+      setError(error.message || "Login failed");
     }
   };
-
   return (
     <main className="container flex h-screen items-center justify-center flex-col gap-12">
       <h2 className="text-6xl font-bold text-center">Login to your account</h2>
