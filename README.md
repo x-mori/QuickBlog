@@ -2,35 +2,25 @@
 
 Paste an article, get a concise summary, and find it later in your account history.
 
-QuickBlog is a Rust workspace. The Axum API lives in `src/`; the Yew WebAssembly client lives in `client/`. PostgreSQL stores accounts and summaries. The API uses OpenAI's `gpt-4o-mini` model.
+QuickBlog is a Rust workspace. The Axum API lives in `src/`; the Yew WebAssembly client lives in `client/`. PostgreSQL stores accounts and summaries. The API uses OpenAI's `gpt-6-luna` model and sends `prompts/gpt-6-luna_absolute_prompt.txt` as a developer message for summaries.
 
 ## Run locally
 
-Install Rust and Cargo, PostgreSQL, and Trunk. Add the browser target and install Trunk once:
+Install Node.js 22 or newer, Rust and Cargo, and PostgreSQL. Add the browser target once:
 
 ```bash
 rustup target add wasm32-unknown-unknown
-cargo install --locked trunk
 ```
 
-Create a PostgreSQL database. Copy `.env.example` to `.env` at the repository root and set `DATABASE_URL`, `JWT_SECRET`, and `OPENAI_API_KEY`. Use a random `JWT_SECRET` of at least 32 characters.
-
-In one terminal, run the API:
+The repository has a local `.env` with a generated `JWT_SECRET`. Put your key in `OPENAI_API_KEY`, then run:
 
 ```bash
-cargo run
+npm run dev
 ```
 
-In another terminal, run the client:
+Open `http://127.0.0.1:8080`. On first run, the command installs Trunk in `.local/tools`, initializes PostgreSQL in `.local/postgres`, and starts the API and frontend. Press Ctrl+C to stop them. The local database and summary history remain for the next run. `DATABASE_URL` can stay empty; the command supplies a local connection URL. To use an existing PostgreSQL database, set `DATABASE_URL` in `.env` instead. Restart `npm run dev` after changing `.env`.
 
-```bash
-cd client
-trunk serve
-```
-
-Open `http://127.0.0.1:8080`. Trunk proxies `/api` to the API on `127.0.0.1:3000`. SQLx applies `migrations/` when the API starts.
-
-To build the client for separate hosting, run `trunk build --release` inside `client/`. Set `QUICKBLOG_API_URL` to the API origin before building if the frontend and API use different origins, and set `CORS_ORIGIN` on the API to the frontend origin. Configure the static host to return `index.html` for client routes such as `/history` and `/login`.
+To build the client for separate hosting, use the Trunk executable in `.local/tools/bin` to run `trunk build --release` inside `client/`. Set `QUICKBLOG_API_URL` to the API origin before building if the frontend and API use different origins, and set `CORS_ORIGIN` on the API to the frontend origin. Configure the static host to return `index.html` for client routes such as `/history` and `/login`.
 
 ## API
 

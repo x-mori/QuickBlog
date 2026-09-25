@@ -18,6 +18,8 @@ use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, FromRow, PgPool};
 use tower_http::cors::CorsLayer;
 
+const ABSOLUTE_OUTPUT_PROMPT: &str = include_str!("../prompts/gpt-6-luna_absolute_prompt.txt");
+
 #[derive(Clone)]
 struct AppState {
     db: PgPool,
@@ -298,9 +300,10 @@ async fn summarize(
     let response = state.http.post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(&state.openai_key)
         .json(&json!({
-            "model": "gpt-4o-mini",
+            "model": "gpt-6-luna",
             "messages": [
-                { "role": "system", "content": "Summarize the article clearly and concisely. Keep its main facts and conclusions. Do not add facts or introductory filler." },
+                { "role": "developer", "content": ABSOLUTE_OUTPUT_PROMPT },
+                { "role": "developer", "content": "Summarize the article clearly and concisely. Keep its main facts and conclusions. Do not add facts or introductory filler." },
                 { "role": "user", "content": article }
             ]
         }))
