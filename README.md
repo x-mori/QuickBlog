@@ -2,21 +2,35 @@
 
 Paste an article, get a concise summary, and find it later in your account history.
 
-The frontend is React and Vite in `client/`. The API is Rust with Axum, Tokio, SQLx, PostgreSQL, and Reqwest. The API calls OpenAI's `gpt-4o-mini` model.
+QuickBlog is a Rust workspace. The Axum API lives in `src/`; the Yew WebAssembly client lives in `client/`. PostgreSQL stores accounts and summaries. The API uses OpenAI's `gpt-4o-mini` model.
 
 ## Run locally
 
-You need Rust and Cargo, Node.js, PostgreSQL, and an OpenAI API key. Create a PostgreSQL database, then copy `.env.example` to `.env` in the repository root and set `DATABASE_URL`, `JWT_SECRET`, and `OPENAI_API_KEY`. Use a random `JWT_SECRET` of at least 32 characters.
+Install Rust and Cargo, PostgreSQL, and Trunk. Add the browser target and install Trunk once:
 
 ```bash
-npm install
-npm install --prefix client
-npm run dev
+rustup target add wasm32-unknown-unknown
+cargo install --locked trunk
 ```
 
-`npm run dev` starts `cargo run` and Vite. The API listens on `127.0.0.1:3000` and Vite proxies `/api` to it. You can also run them separately with `cargo run` and `npm run client`. On the first API start, SQLx applies the files in `migrations/`.
+Create a PostgreSQL database. Copy `.env.example` to `.env` at the repository root and set `DATABASE_URL`, `JWT_SECRET`, and `OPENAI_API_KEY`. Use a random `JWT_SECRET` of at least 32 characters.
 
-For a separately hosted frontend, set `VITE_API_URL` to the API origin when building the client. Set `CORS_ORIGIN` on the API to the frontend origin. See `client/.env.example`. Build the frontend with `npm run build --prefix client`.
+In one terminal, run the API:
+
+```bash
+cargo run
+```
+
+In another terminal, run the client:
+
+```bash
+cd client
+trunk serve
+```
+
+Open `http://127.0.0.1:8080`. Trunk proxies `/api` to the API on `127.0.0.1:3000`. SQLx applies `migrations/` when the API starts.
+
+To build the client for separate hosting, run `trunk build --release` inside `client/`. Set `QUICKBLOG_API_URL` to the API origin before building if the frontend and API use different origins, and set `CORS_ORIGIN` on the API to the frontend origin. Configure the static host to return `index.html` for client routes such as `/history` and `/login`.
 
 ## API
 

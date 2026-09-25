@@ -1,5 +1,7 @@
 # QuickBlog client
 
-Run `npm install --prefix client`, then `npm run client` from the repository root. Vite proxies `/api` to the Rust API on `127.0.0.1:3000` during development.
+This directory contains the Yew WebAssembly frontend. Install its build tools with `rustup target add wasm32-unknown-unknown` and `cargo install --locked trunk`.
 
-When hosting the frontend separately, set `VITE_API_URL` to the Rust API origin before running `npm run build --prefix client`. The API must allow that frontend origin through `CORS_ORIGIN`.
+Run `trunk serve` here while `cargo run` serves the API from the repository root. Trunk proxies `/api` to the local API. Run `trunk build --release` here for a production client bundle in `dist/`.
+
+For a separately hosted API, set `QUICKBLOG_API_URL` to its origin before building and set the API's `CORS_ORIGIN` to the frontend origin. Serve `index.html` for browser routes such as `/history`.
