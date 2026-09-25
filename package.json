@@ -1,5 +1,5 @@
 {
-  "name": "ai-blog-summarizer",
+  "name": "quickblog",
   "private": true,
   "scripts": {
     "client": "npm start --prefix client",

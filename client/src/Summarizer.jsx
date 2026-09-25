@@ -28,7 +28,7 @@ function Summarizer() {
 
   return (
     <main className="container flex flex-col items-center gap-20 w-full">
-      <h2 className="text-6xl font-bold text-center">AI Blog Summarizer</h2>
+      <h2 className="text-6xl font-bold text-center">QuickBlog</h2>
 
       {/* separator */}
       <div className="grid grid-cols-2 gap-20 max-xl:flex max-xl:flex-col">

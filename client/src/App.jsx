@@ -8,7 +8,7 @@ import { useEffect } from "react";
 
 function App() {
   useEffect(() => {
-    document.title = "AI Blog Summarizer";
+    document.title = "QuickBlog";
   }, []);
 
   return (
