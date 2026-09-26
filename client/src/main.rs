@@ -47,6 +47,7 @@ struct SummaryResponse {
 #[derive(Deserialize)]
 struct HistoryItem {
     id: i32,
+    original: String,
     summary: String,
     created_at: String,
 }
@@ -140,7 +141,7 @@ fn App() -> Html {
                     <main class="site-main">
                         <Switch<Route> render={switch} />
                     </main>
-                    <footer class="footer">{format!("© {year} made by fujimori_")}</footer>
+                    <footer class="footer">{format!("© 2025-{year} made by fujimori_")}</footer>
                 </div>
             </BrowserRouter>
         </ContextProvider<Auth>>
@@ -172,11 +173,16 @@ fn Header() -> Html {
         })
     };
     html! {
-        <nav class="nav" aria-label="Main navigation">
-            <Link<Route> to={Route::Home}>{"Generator"}</Link<Route>>
-            <Link<Route> to={Route::History}>{"History"}</Link<Route>>
-            <button type="button" onclick={logout}>{"Logout"}</button>
-        </nav>
+        <header class="site-header">
+            <nav class="nav" aria-label="Main navigation">
+                <Link<Route> classes="brand" to={Route::Home}>{"QUICK"}<span>{"BLOG"}</span></Link<Route>>
+                <div class="nav-links">
+                    <Link<Route> to={Route::Home}>{"Generator"}</Link<Route>>
+                    <Link<Route> to={Route::History}>{"History"}</Link<Route>>
+                    <button type="button" onclick={logout}>{"Log out"}</button>
+                </div>
+            </nav>
+        </header>
     }
 }
 
@@ -382,32 +388,108 @@ fn HomePage() -> Html {
         return html! { <Redirect<Route> to={Route::Login} /> };
     }
     html! {
-        <section>
-            <h1>{"QuickBlog"}</h1>
+        <section class="generator-page">
+            <div class="page-heading">
+                <h1>{"QuickBlog"}</h1>
+                <p>{"A shorter read, without losing the point."}</p>
+            </div>
             <div class="workspace">
-                <div>
-                    <h2>{"Prompt"}</h2>
+                <div class="workspace-panel">
+                    <div class="panel-heading"><span class="panel-number">{"01"}</span><h2>{"Your text"}</h2></div>
                     <form class="editor" {onsubmit}>
-                        <textarea rows="6" value={(*article).clone()} oninput={on_article} placeholder="Paste your blog/article here..." required=true />
-                        <button class="primary" type="submit" disabled={*loading}>
-                            {if *loading {"Summarizing..."} else {"Summarize"}}
-                        </button>
+                        <textarea rows="10" value={(*article).clone()} oninput={on_article} placeholder="Paste your article or prompt here..." aria-label="Text to summarize" required=true />
+                        <div class="panel-actions">
+                            <span class="panel-hint">{"Up to 20,000 characters"}</span>
+                            <button class="primary" type="submit" disabled={*loading}>
+                                {if *loading {"Summarizing..."} else {"Summarize text"}}
+                            </button>
+                        </div>
                     </form>
                     {if let Some(message) = &*error { html! { <p class="error" role="alert">{message}</p> } } else { Html::default() }}
                 </div>
-                <div>
-                    <h2>{"Summary"}</h2>
+                <div class="workspace-panel">
+                    <div class="panel-heading"><span class="panel-number">{"02"}</span><h2>{"Your summary"}</h2></div>
                     <div class="result" aria-live="polite">
                         {if *loading { html! { "Loading..." } }
                          else if let Some(text) = &*summary { html! { text } }
-                         else { html! { <span class="placeholder">{"Your summary appears here..."}</span> } }}
+                         else { html! { <span class="placeholder">{"Your summary will appear here..."}</span> } }}
                     </div>
-                    <button class="copy" type="button" onclick={on_copy} disabled={summary.is_none()}>
-                        {if *copied {"Copied!"} else {"Copy summary"}}
-                    </button>
+                    <div class="panel-actions panel-actions-end">
+                        <button class="copy" type="button" onclick={on_copy} disabled={summary.is_none()}>
+                            {if *copied {"Copied"} else {"Copy summary"}}
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
+    }
+}
+
+fn excerpt(text: &str, limit: usize) -> String {
+    let clean = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if clean.chars().count() <= limit {
+        return clean;
+    }
+    let short: String = clean.chars().take(limit).collect();
+    let short = short
+        .rsplit_once(' ')
+        .map_or(short.as_str(), |(head, _)| head);
+    format!("{}…", short.trim_end())
+}
+
+#[derive(Properties, PartialEq)]
+struct HistoryCardProps {
+    id: i32,
+    original: String,
+    summary: String,
+    created_at: String,
+}
+
+#[component]
+fn HistoryCard(props: &HistoryCardProps) -> Html {
+    let expanded = use_state(|| false);
+    let toggle = {
+        let expanded = expanded.clone();
+        Callback::from(move |_| expanded.set(!*expanded))
+    };
+    let preview = excerpt(&props.summary, 220);
+    let can_expand = props
+        .summary
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .chars()
+        .count()
+        > 220;
+    let summary = if *expanded {
+        props.summary.clone()
+    } else {
+        preview
+    };
+    html! {
+        <article class="history-card">
+            <div class="history-card-top">
+                <span class="history-card-mark">{"SUMMARY"}</span>
+                <time>{props.created_at.replace('T', " ").trim_end_matches('Z')}{" UTC"}</time>
+            </div>
+            <div class="history-field">
+                <span class="history-label">{"Your prompt"}</span>
+                <p class="history-prompt">{excerpt(&props.original, 150)}</p>
+            </div>
+            <div class="history-field">
+                <span class="history-label">{"Summary"}</span>
+                {if can_expand {
+                    html! {
+                        <button class="history-summary" type="button" onclick={toggle} aria-expanded={expanded.to_string()}>
+                            <span class="history-summary-text">{summary}</span>
+                            <span class="history-summary-action">{if *expanded {"Show less ↑"} else {"Read full summary ↓"}}</span>
+                        </button>
+                    }
+                } else {
+                    html! { <p class="history-summary-text">{&props.summary}</p> }
+                }}
+            </div>
+        </article>
     }
 }
 
@@ -457,18 +539,20 @@ fn HistoryPage() -> Html {
     }
     html! {
         <section class="history">
-            <h1>{"Summary History"}</h1>
-            {if *loading { html! { <p>{"Loading..."}</p> } } else { Html::default() }}
+            <div class="page-heading">
+                <h1>{"Your history"}</h1>
+                <p>{"The prompts you sent and the summaries you kept."}</p>
+            </div>
+            {if *loading { html! { <p class="loading-message">{"Loading history..."}</p> } } else { Html::default() }}
             {if let Some(message) = &*error { html! { <p class="error" role="alert">{message}</p> } } else { Html::default() }}
             {if !*loading && error.is_none() && items.is_empty() {
-                html! { <p class="empty">{"No summaries yet."}</p> }
+                html! { <div class="empty"><h2>{"Nothing here yet"}</h2><p>{"Your summaries will show up after you create one."}</p><Link<Route> to={Route::Home}>{"Start a summary"}</Link<Route>></div> }
             } else { Html::default() }}
-            {for items.iter().map(|item| html! {
-                <article key={item.id}>
-                    <time>{item.created_at.replace('T', " ").trim_end_matches('Z')}{" UTC"}</time>
-                    <p>{&item.summary}</p>
-                </article>
-            })}
+            <div class="history-list">
+                {for items.iter().map(|item| html! {
+                    <HistoryCard key={item.id} id={item.id} original={item.original.clone()} summary={item.summary.clone()} created_at={item.created_at.clone()} />
+                })}
+            </div>
         </section>
     }
 }

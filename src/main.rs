@@ -95,6 +95,7 @@ struct CompletionMessage {
 #[derive(FromRow)]
 struct HistoryRow {
     id: i32,
+    original: String,
     summary: String,
     created_at: NaiveDateTime,
 }
@@ -102,6 +103,7 @@ struct HistoryRow {
 #[derive(Serialize)]
 struct HistoryItem {
     id: i32,
+    original: String,
     summary: String,
     created_at: String,
 }
@@ -356,7 +358,7 @@ async fn history(
 ) -> Result<Json<Vec<HistoryItem>>, ApiError> {
     let user_id = authenticated_user(&headers, &state.jwt_secret)?;
     let rows: Vec<HistoryRow> = sqlx::query_as(
-        "SELECT id, summary, created_at FROM summaries WHERE user_id = $1 ORDER BY created_at DESC, id DESC")
+        "SELECT id, original, summary, created_at FROM summaries WHERE user_id = $1 ORDER BY created_at DESC, id DESC")
         .bind(user_id).fetch_all(&state.db).await
         .map_err(|error| {
             tracing::error!(%error, "History database query failed");
@@ -366,6 +368,7 @@ async fn history(
         rows.into_iter()
             .map(|row| HistoryItem {
                 id: row.id,
+                original: row.original,
                 summary: row.summary,
                 created_at: format!("{}Z", row.created_at.format("%Y-%m-%dT%H:%M:%S%.3f")),
             })

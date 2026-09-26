@@ -29,7 +29,7 @@ To build the client for separate hosting, use the Trunk executable in `.local/to
 | `POST` | `/api/auth/signup` | Create an account and return `{ "token" }` |
 | `POST` | `/api/auth/login` | Sign in and return `{ "token", "userId" }` |
 | `POST` | `/api/summarize` | Summarize `{ "article" }`, save it, and return `{ "summary" }` |
-| `GET` | `/api/summarize` | Return the signed-in user's `{ "id", "summary", "created_at" }` rows |
+| `GET` | `/api/summarize` | Return the signed-in user's `{ "id", "original", "summary", "created_at" }` rows |
 
 The summary routes require `Authorization: Bearer <token>`. New tokens expire after seven days. Paste 1 to 20,000 characters per article. API errors have an `error` field and a matching HTTP status.
 
